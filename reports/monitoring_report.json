@@ -1,0 +1,91 @@
+{
+  "model_quality": {
+    "roc_auc": 0.8876581510258856,
+    "f1": 0.6174872665534805,
+    "recall": 0.5207617411225659,
+    "status": "ok"
+  },
+  "data_quality": {
+    "missing_values": 0,
+    "rows_checked": 33007,
+    "numeric_drift": [
+      {
+        "feature": "HasCrCard",
+        "train_mean": 0.7547850060972376,
+        "current_mean": 0.7506286545278275,
+        "mean_shift_std_units": 0.009661112349424602,
+        "status": "ok"
+      },
+      {
+        "feature": "EstimatedSalary",
+        "train_mean": 112485.64754965274,
+        "current_mean": 112931.52077140303,
+        "mean_shift_std_units": 0.008862877401237836,
+        "status": "ok"
+      },
+      {
+        "feature": "IsActiveMember",
+        "train_mean": 0.49695895536519047,
+        "current_mean": 0.5010149362256491,
+        "mean_shift_std_units": 0.00811211176315286,
+        "status": "ok"
+      },
+      {
+        "feature": "NumOfProducts",
+        "train_mean": 1.5537730918675725,
+        "current_mean": 1.5571848395794832,
+        "mean_shift_std_units": 0.006233781572315073,
+        "status": "ok"
+      },
+      {
+        "feature": "Tenure",
+        "train_mean": 5.017072265521446,
+        "current_mean": 5.033477747144545,
+        "mean_shift_std_units": 0.00584983424032665,
+        "status": "ok"
+      },
+      {
+        "feature": "id",
+        "train_mean": 82553.32107069009,
+        "current_mean": 82369.21683279304,
+        "mean_shift_std_units": 0.0038676420316585674,
+        "status": "ok"
+      },
+      {
+        "feature": "Age",
+        "train_mean": 38.11975580752422,
+        "current_mean": 38.1504159723695,
+        "mean_shift_std_units": 0.0034605187502194847,
+        "status": "ok"
+      },
+      {
+        "feature": "CreditScore",
+        "train_mean": 656.4978981571951,
+        "current_mean": 656.280273881298,
+        "mean_shift_std_units": 0.002717861521003405,
+        "status": "ok"
+      },
+      {
+        "feature": "CustomerId",
+        "train_mean": 15692037.91474471,
+        "current_mean": 15691873.437149696,
+        "mean_shift_std_units": 0.0023019673516050574,
+        "status": "ok"
+      },
+      {
+        "feature": "Balance",
+        "train_mean": 55457.88942216365,
+        "current_mean": 55558.87514618111,
+        "mean_shift_std_units": 0.0016082854389251249,
+        "status": "ok"
+      }
+    ],
+    "drift_warnings": 0
+  },
+  "infrastructure": {
+    "batch_latency_ms": 85.68739999827812,
+    "rows_per_second": 385202.491856017,
+    "cpu_monitoring": "Docker stats / GitHub Actions runtime logs",
+    "resource_status": "ok"
+  }
+}
