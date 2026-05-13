@@ -9,20 +9,16 @@ DATA_DIR = ROOT_DIR / "data"
 MODELS_DIR = ROOT_DIR / "models"
 REPORTS_DIR = ROOT_DIR / "reports"
 
-# Ссылка на исходный датасет
+# Данные и артефакты
 DATA_URL = "https://github.com/alexmart1997/Case_1/blob/main/train.csv?raw=true"
-
-# Локальный путь для сохранения датасета
 DATA_PATH = DATA_DIR / "train.csv"
 MODEL_PATH = MODELS_DIR / "best_model.pkl"
 METRICS_PATH = REPORTS_DIR / "metrics.csv"
 
-# Название целевой переменной
+# Настройки задачи
 TARGET_COLUMN = "Exited"
-
-# Признаки, которые нужно удалить перед обучением
 DROP_COLUMNS = ["id", "CustomerId", "Surname"]
 
-# Параметры разбиения данных
+# Настройки разбиения данных
 TEST_SIZE = 0.2
 RANDOM_STATE = 42

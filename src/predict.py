@@ -40,7 +40,6 @@ def make_predictions(input_path, output_path=PREDICTIONS_PATH):
 
     output_path.parent.mkdir(parents=True, exist_ok=True)
     result.to_csv(output_path, index=False)
-
     return result
 
 

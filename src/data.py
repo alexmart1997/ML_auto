@@ -22,14 +22,14 @@ except ImportError:
 
 
 def load_data(path=DATA_PATH, url=DATA_URL):
-    """Загружает данные из CSV-файла или скачивает их по ссылке."""
+    """Загружает данные из локального CSV или скачивает их по ссылке."""
     path.parent.mkdir(parents=True, exist_ok=True)
 
-    # Если файл уже есть локально, просто читаем его
+    # Если файл уже есть, используем локальную копию
     if path.exists():
         return pd.read_csv(path)
 
-    # Если файла нет, скачиваем датасет и сохраняем в data/train.csv
+    # Если файла нет, скачиваем датасет и сохраняем его
     data = pd.read_csv(url)
     data.to_csv(path, index=False)
     return data
@@ -47,11 +47,7 @@ def split_features_target(data, target_column=TARGET_COLUMN, drop_columns=DROP_C
     return X, y
 
 
-def make_train_test_split(
-    data,
-    test_size=TEST_SIZE,
-    random_state=RANDOM_STATE,
-):
+def make_train_test_split(data, test_size=TEST_SIZE, random_state=RANDOM_STATE):
     """Делит данные на train/test с сохранением баланса классов."""
     X, y = split_features_target(data)
 

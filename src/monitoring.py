@@ -1,10 +1,10 @@
-import joblib
-import matplotlib
 import sys
 from pathlib import Path
 
-sys.path.append(str(Path(__file__).resolve().parents[1]))
+import joblib
+import matplotlib
 
+sys.path.append(str(Path(__file__).resolve().parents[1]))
 matplotlib.use("Agg")
 
 import matplotlib.pyplot as plt
@@ -72,11 +72,12 @@ def check_model_quality(model, data):
     y_pred = model.predict(X_test)
     y_proba = model.predict_proba(X_test)[:, 1]
 
-    return {
+    metrics = {
         "roc_auc": roc_auc_score(y_test, y_proba),
         "f1": f1_score(y_test, y_pred, zero_division=0),
         "recall": recall_score(y_test, y_pred, zero_division=0),
-    }, y_proba
+    }
+    return metrics, y_proba
 
 
 def save_target_distribution(data):
@@ -149,7 +150,6 @@ def run_monitoring():
     save_missing_values(data)
 
     MONITORING_REPORT_PATH.write_text("\n".join(report_lines), encoding="utf-8")
-
     return metrics
 
 

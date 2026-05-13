@@ -3,7 +3,10 @@ from sklearn.impute import SimpleImputer
 from sklearn.pipeline import Pipeline
 from sklearn.preprocessing import OneHotEncoder, StandardScaler
 
-from src.config import DROP_COLUMNS, TARGET_COLUMN
+try:
+    from src.config import DROP_COLUMNS, TARGET_COLUMN
+except ImportError:
+    from config import DROP_COLUMNS, TARGET_COLUMN
 
 
 def get_feature_columns():
@@ -18,12 +21,7 @@ def get_feature_columns():
         "IsActiveMember",
         "EstimatedSalary",
     ]
-
-    categorical_features = [
-        "Geography",
-        "Gender",
-    ]
-
+    categorical_features = ["Geography", "Gender"]
     return numerical_features, categorical_features
 
 
@@ -31,7 +29,7 @@ def build_preprocessor():
     """Создаёт препроцессор для подготовки признаков."""
     numerical_features, categorical_features = get_feature_columns()
 
-    # Обработка числовых признаков: заполняем пропуски и масштабируем
+    # Обработка числовых признаков: пропуски и масштабирование
     numerical_transformer = Pipeline(
         steps=[
             ("imputer", SimpleImputer(strategy="median")),
@@ -39,7 +37,7 @@ def build_preprocessor():
         ]
     )
 
-    # Обработка категориальных признаков: заполняем пропуски и кодируем
+    # Обработка категориальных признаков: пропуски и one-hot encoding
     categorical_transformer = Pipeline(
         steps=[
             ("imputer", SimpleImputer(strategy="most_frequent")),
@@ -63,7 +61,6 @@ def split_features_target(data, target_column=TARGET_COLUMN):
     # Удаляем технические и идентификационные признаки
     columns_to_drop = [col for col in DROP_COLUMNS if col in X.columns]
     X = X.drop(columns=columns_to_drop)
-
     return X, y
 
 
@@ -82,7 +79,6 @@ def make_preprocessor(X=None):
             ("scaler", StandardScaler()),
         ]
     )
-
     categorical_transformer = Pipeline(
         steps=[
             ("imputer", SimpleImputer(strategy="most_frequent")),

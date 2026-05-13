@@ -96,12 +96,7 @@ def train_model():
 
             run_ids[model_name] = run.info.run_id
 
-        results.append(
-            {
-                "model": model_name,
-                **metrics,
-            }
-        )
+        results.append({"model": model_name, **metrics})
 
         # Выбираем лучшую модель по ROC-AUC
         if metrics["roc_auc"] > best_roc_auc:
@@ -119,7 +114,7 @@ def train_model():
     MODEL_PATH.parent.mkdir(parents=True, exist_ok=True)
     joblib.dump(best_model, MODEL_PATH)
 
-    # Добавляем итоговый файл metrics.csv во все MLflow run
+    # Логируем metrics.csv во все MLflow runs
     for run_id in run_ids.values():
         with mlflow.start_run(run_id=run_id):
             mlflow.log_artifact(METRICS_PATH)
