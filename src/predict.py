@@ -1,38 +1,59 @@
+import argparse
+
 import joblib
 import pandas as pd
 
-from src.config import MODEL_PATH
+try:
+    from src.config import DROP_COLUMNS, MODEL_PATH, REPORTS_DIR
+except ImportError:
+    from config import DROP_COLUMNS, MODEL_PATH, REPORTS_DIR
+
+
+PREDICTIONS_PATH = REPORTS_DIR / "predictions.csv"
+EXTRA_COLUMNS = DROP_COLUMNS + ["Exited"]
 
 
 def load_model(path=MODEL_PATH):
-    """Загружает обученную модель."""
+    """Загружает сохранённую модель."""
     return joblib.load(path)
 
 
-def predict(data, model_path=MODEL_PATH):
-    """Возвращает предсказания для новых клиентов."""
-    model = load_model(model_path)
+def prepare_data(data):
+    """Удаляет лишние колонки перед предсказанием."""
+    columns_to_drop = [col for col in EXTRA_COLUMNS if col in data.columns]
+    return data.drop(columns=columns_to_drop)
 
-    if isinstance(data, dict):
-        data = pd.DataFrame([data])
 
-    return model.predict(data)
+def make_predictions(input_path, output_path=PREDICTIONS_PATH):
+    """Делает предсказания для клиентов из CSV-файла."""
+    model = load_model()
+    data = pd.read_csv(input_path)
+    X = prepare_data(data)
+
+    # Предсказываем класс и вероятность оттока
+    predicted_class = model.predict(X)
+    churn_probability = model.predict_proba(X)[:, 1]
+
+    result = data.copy()
+    result["predicted_class"] = predicted_class
+    result["churn_probability"] = churn_probability
+
+    output_path.parent.mkdir(parents=True, exist_ok=True)
+    result.to_csv(output_path, index=False)
+
+    return result
+
+
+def parse_args():
+    """Читает путь к CSV-файлу из аргументов командной строки."""
+    parser = argparse.ArgumentParser(description="Предсказание оттока клиентов банка")
+    parser.add_argument("input_csv", help="Путь к CSV-файлу с клиентами")
+    return parser.parse_args()
 
 
 if __name__ == "__main__":
-    # Пример одного клиента для быстрой проверки
-    client = {
-        "CreditScore": 650,
-        "Geography": "France",
-        "Gender": "Male",
-        "Age": 35,
-        "Tenure": 5,
-        "Balance": 50000,
-        "NumOfProducts": 2,
-        "HasCrCard": 1,
-        "IsActiveMember": 1,
-        "EstimatedSalary": 100000,
-    }
+    args = parse_args()
+    predictions = make_predictions(args.input_csv)
 
-    result = predict(client)[0]
-    print(f"Прогноз Exited: {result}")
+    print(f"Предсказания сохранены: {PREDICTIONS_PATH}")
+    print(f"Количество строк: {len(predictions)}")
