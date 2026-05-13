@@ -6,6 +6,8 @@ venv/
 
 data/*.csv
 models/*.joblib
+models/*.pkl
 reports/*.txt
+reports/*.csv
 
 !.gitkeep

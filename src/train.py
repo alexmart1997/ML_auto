@@ -1,41 +1,103 @@
 import joblib
+import pandas as pd
+from sklearn.ensemble import HistGradientBoostingClassifier, RandomForestClassifier
 from sklearn.linear_model import LogisticRegression
-from sklearn.model_selection import train_test_split
+from sklearn.metrics import (
+    accuracy_score,
+    f1_score,
+    precision_score,
+    recall_score,
+    roc_auc_score,
+)
 from sklearn.pipeline import Pipeline
 
-from src.config import MODEL_PATH, RANDOM_STATE, TEST_SIZE
-from src.data import load_data
-from src.features import make_preprocessor, split_features_target
+from src.config import METRICS_PATH, MODEL_PATH, RANDOM_STATE
+from src.data import load_data, make_train_test_split
+from src.features import build_preprocessor
+
+
+def get_models():
+    """Возвращает набор моделей для автоматического сравнения."""
+    return {
+        "LogisticRegression": LogisticRegression(
+            max_iter=1000,
+            class_weight="balanced",
+            random_state=RANDOM_STATE,
+        ),
+        "RandomForestClassifier": RandomForestClassifier(
+            n_estimators=100,
+            class_weight="balanced",
+            random_state=RANDOM_STATE,
+        ),
+        "HistGradientBoostingClassifier": HistGradientBoostingClassifier(
+            random_state=RANDOM_STATE,
+        ),
+    }
+
+
+def calculate_metrics(model, X_test, y_test):
+    """Считает основные метрики качества модели."""
+    y_pred = model.predict(X_test)
+    y_proba = model.predict_proba(X_test)[:, 1]
+
+    return {
+        "accuracy": accuracy_score(y_test, y_pred),
+        "precision": precision_score(y_test, y_pred, zero_division=0),
+        "recall": recall_score(y_test, y_pred, zero_division=0),
+        "f1": f1_score(y_test, y_pred, zero_division=0),
+        "roc_auc": roc_auc_score(y_test, y_proba),
+    }
 
 
 def train_model():
-    """Обучает модель и сохраняет её в папку models."""
+    """Обучает несколько моделей и сохраняет лучшую по ROC-AUC."""
     data = load_data()
-    X, y = split_features_target(data)
+    X_train, X_test, y_train, y_test = make_train_test_split(data)
 
-    X_train, X_test, y_train, y_test = train_test_split(
-        X,
-        y,
-        test_size=TEST_SIZE,
-        random_state=RANDOM_STATE,
-        stratify=y,
-    )
+    results = []
+    best_model = None
+    best_model_name = None
+    best_roc_auc = -1
 
-    model = Pipeline(
-        steps=[
-            ("preprocessor", make_preprocessor(X_train)),
-            ("classifier", LogisticRegression(max_iter=1000, class_weight="balanced")),
-        ]
-    )
+    for model_name, model in get_models().items():
+        # Для каждой модели собираем отдельный Pipeline
+        pipeline = Pipeline(
+            steps=[
+                ("preprocessor", build_preprocessor()),
+                ("model", model),
+            ]
+        )
 
-    model.fit(X_train, y_train)
+        pipeline.fit(X_train, y_train)
+        metrics = calculate_metrics(pipeline, X_test, y_test)
 
+        results.append(
+            {
+                "model": model_name,
+                **metrics,
+            }
+        )
+
+        # Выбираем лучшую модель по ROC-AUC
+        if metrics["roc_auc"] > best_roc_auc:
+            best_roc_auc = metrics["roc_auc"]
+            best_model = pipeline
+            best_model_name = model_name
+
+    # Сохраняем таблицу метрик
+    METRICS_PATH.parent.mkdir(parents=True, exist_ok=True)
+    metrics_df = pd.DataFrame(results).sort_values("roc_auc", ascending=False)
+    metrics_df.to_csv(METRICS_PATH, index=False)
+
+    # Сохраняем лучшую модель
     MODEL_PATH.parent.mkdir(parents=True, exist_ok=True)
-    joblib.dump(model, MODEL_PATH)
+    joblib.dump(best_model, MODEL_PATH)
 
-    return model, X_test, y_test
+    return best_model, X_test, y_test, best_model_name, best_roc_auc
 
 
 if __name__ == "__main__":
-    train_model()
-    print(f"Модель сохранена: {MODEL_PATH}")
+    _, _, _, best_model_name, best_roc_auc = train_model()
+
+    print(f"Лучшая модель: {best_model_name}")
+    print(f"ROC-AUC: {best_roc_auc:.4f}")
