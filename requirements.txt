@@ -5,3 +5,7 @@ matplotlib
 joblib
 mlflow
 pytest
+fastapi
+uvicorn
+prometheus-client
+psutil
