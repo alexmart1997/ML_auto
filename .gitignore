@@ -9,5 +9,6 @@ models/*.joblib
 models/*.pkl
 reports/*.txt
 reports/*.csv
+reports/*.png
 
 !.gitkeep
