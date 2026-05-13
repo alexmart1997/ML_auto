@@ -1,4 +1,5 @@
 import joblib
+import mlflow
 import pandas as pd
 from sklearn.ensemble import HistGradientBoostingClassifier, RandomForestClassifier
 from sklearn.linear_model import LogisticRegression
@@ -11,9 +12,14 @@ from sklearn.metrics import (
 )
 from sklearn.pipeline import Pipeline
 
-from src.config import METRICS_PATH, MODEL_PATH, RANDOM_STATE
-from src.data import load_data, make_train_test_split
-from src.features import build_preprocessor
+try:
+    from src.config import METRICS_PATH, MODEL_PATH, RANDOM_STATE
+    from src.data import load_data, make_train_test_split
+    from src.features import build_preprocessor
+except ImportError:
+    from config import METRICS_PATH, MODEL_PATH, RANDOM_STATE
+    from data import load_data, make_train_test_split
+    from features import build_preprocessor
 
 
 def get_models():
@@ -49,14 +55,24 @@ def calculate_metrics(model, X_test, y_test):
     }
 
 
+def setup_mlflow():
+    """Настраивает локальный MLflow experiment."""
+    mlflow.set_tracking_uri("mlruns")
+    mlflow.set_experiment("bank_churn_automl")
+
+
 def train_model():
-    """Обучает несколько моделей и сохраняет лучшую по ROC-AUC."""
+    """Обучает несколько моделей, логирует MLflow и сохраняет лучшую."""
+    setup_mlflow()
+
     data = load_data()
     X_train, X_test, y_train, y_test = make_train_test_split(data)
 
     results = []
+    run_ids = {}
     best_model = None
     best_model_name = None
+    best_run_id = None
     best_roc_auc = -1
 
     for model_name, model in get_models().items():
@@ -68,8 +84,17 @@ def train_model():
             ]
         )
 
-        pipeline.fit(X_train, y_train)
-        metrics = calculate_metrics(pipeline, X_test, y_test)
+        with mlflow.start_run(run_name=model_name) as run:
+            pipeline.fit(X_train, y_train)
+            metrics = calculate_metrics(pipeline, X_test, y_test)
+
+            # Логируем название, параметры и метрики модели
+            mlflow.set_tag("model_name", model_name)
+            mlflow.log_param("model_name", model_name)
+            mlflow.log_params(model.get_params())
+            mlflow.log_metrics(metrics)
+
+            run_ids[model_name] = run.info.run_id
 
         results.append(
             {
@@ -83,15 +108,26 @@ def train_model():
             best_roc_auc = metrics["roc_auc"]
             best_model = pipeline
             best_model_name = model_name
+            best_run_id = run_ids[model_name]
 
     # Сохраняем таблицу метрик
     METRICS_PATH.parent.mkdir(parents=True, exist_ok=True)
     metrics_df = pd.DataFrame(results).sort_values("roc_auc", ascending=False)
     metrics_df.to_csv(METRICS_PATH, index=False)
 
-    # Сохраняем лучшую модель
+    # Сохраняем лучшую модель локально
     MODEL_PATH.parent.mkdir(parents=True, exist_ok=True)
     joblib.dump(best_model, MODEL_PATH)
+
+    # Добавляем итоговый файл metrics.csv во все MLflow run
+    for run_id in run_ids.values():
+        with mlflow.start_run(run_id=run_id):
+            mlflow.log_artifact(METRICS_PATH)
+
+    # Логируем лучшую модель как MLflow artifact
+    with mlflow.start_run(run_id=best_run_id):
+        mlflow.set_tag("best_model", "true")
+        mlflow.log_artifact(MODEL_PATH, artifact_path="best_model")
 
     return best_model, X_test, y_test, best_model_name, best_roc_auc
 
